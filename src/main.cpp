@@ -19,7 +19,7 @@ std::string site_head(".");
 std::string resp404("404 nono");
 std::basic_regex<char> reg_METHOD_URI("(GET|POST|PUT|HEAD|DELETE|PATCH|OPTIONS)\\s+(\\S+)\\s+(HTTP)");
 std::basic_regex<char> reg_FORMAT("Accept:\\s*(.*)");
-std::basic_regex<char> reg_COMMAND("%(.*) (.*)%");
+std::basic_regex<char> reg_COMMAND("%(.*?) (.*)%");
 std::smatch MATCH;
 
 
@@ -91,6 +91,7 @@ std::string getFileContents(std::string filename)
 
             for (std::sregex_iterator i = comm_begin; i != comm_end; ++i) {
                 tempMatch = *i;
+
                 try {
                     if(tempMatch[1] == "include"){
                         std::string temp = getFileContents(tempMatch[2]);
@@ -118,7 +119,6 @@ std::string getFileContents(std::string filename)
                         std::string output = tempMatch[0].str();
                         output.replace(0,tempMatch[1].length()+2,"");
                         output.replace(output.length()-1,1,"");
-                        std::cout << output << std::endl;
                         try
                         {   
                             boost::python::exec(output.c_str(),mainpy.global);
@@ -130,6 +130,9 @@ std::string getFileContents(std::string filename)
                         
                         contents.replace(accum+tempMatch.position(),tempMatch.length(),"");
                         accum -= tempMatch.length();
+                    }
+                    else {
+                        std::cout << "Unrecognized command " << tempMatch[1] << std::endl; 
                     }
                 }
                 catch(...) {
@@ -274,10 +277,16 @@ int main(){
         if(endsWith(request->uri,".png")){
             resp.contentType = "image/png";
         }
+        else if(endsWith(request->uri,".pdf")){
+            resp.contentType = "application/pdf";
+        }
+        else if(request->uri == "/favicon.ico"){
+            resp.contentType = "image/png";
+            request->uri = "/favicon.png";
+        }
         else{
             resp.contentType = "text/html";
         }
-
         try{
             resp.content += getFileContents(request->uri);
         }
